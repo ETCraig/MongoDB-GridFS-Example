@@ -47,18 +47,54 @@ const storage = new GridFsStorage({
         });
     }
 });
-const upload = multer({storage});
+const upload = multer({ storage });
 
 //Get
 
 
 //Post
-app.post('/upload', (req, res) => {
-
-});
-
 app.get('/', (req, res) => {
     res.render('index');
+});
+
+app.post('/upload', upload.single('file'), (req, res) => {
+    // res.json({file: req.file});
+    res.redirect('/')
+});
+
+//Get Display
+app.get('/files', (req, res) => {
+    gfs.files.find().toArray((rr, files) => {
+        if (!files || files.length === 0) {
+            return res.status(404).json({ err: 'NO FILES.' });
+        }
+        return res.json(files);
+    });
+});
+
+//Get Files by ID
+app.get('/files/:filename', (req, res) => {
+    gfs.files.findOne({ filename: req.params.filename }, (err, file) => {
+        if (!file || file.length === 0) {
+            return res.status(404).json({ err: 'NO FILE.' });
+        }
+        return res.json(file);
+    });
+});
+
+//Get Img
+app.get('/image/:filename', (req, res) => {
+    gfs.files.findOne({ filename: req.params.filename }, (err, file) => {
+        if (!file || file.length === 0) {
+            return res.status(404).json({ err: 'NO FILE.' });
+        }
+        if (file.contentType === 'image/jpeg' || file.contentType === 'image/png') {
+            const readstream = gfs.createReadStream(file.filename);
+            readstream.pipe(res);
+        } else {
+            res.status(404).json({ err: 'NOT IMAGE' });
+        }
+    });
 });
 
 const port = 5000;
